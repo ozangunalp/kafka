@@ -52,7 +52,6 @@ public class RaftConfig {
     private static final String QUORUM_PREFIX = "controller.quorum.";
 
     // Non-routable address represents an endpoint that does not resolve to any particular node
-    public static final InetSocketAddress NON_ROUTABLE_ADDRESS = new InetSocketAddress("0.0.0.0", 0);
     public static final UnknownAddressSpec UNKNOWN_ADDRESS_SPEC_INSTANCE = new UnknownAddressSpec();
 
     public static final String QUORUM_VOTERS_CONFIG = QUORUM_PREFIX + "voters";
@@ -103,11 +102,15 @@ public class RaftConfig {
     public interface AddressSpec {
     }
 
+    public static boolean nonRoutableAddress(InetSocketAddress address) {
+        return address.getHostName().equals("0.0.0.0") && address.getPort() == 0;
+    }
+
     public static class InetAddressSpec implements AddressSpec {
         public final InetSocketAddress address;
 
         public InetAddressSpec(InetSocketAddress address) {
-            if (address == null || address.equals(NON_ROUTABLE_ADDRESS)) {
+            if (address == null || nonRoutableAddress(address)) {
                 throw new IllegalArgumentException("Invalid address: " + address);
             }
             this.address = address;
@@ -231,7 +234,7 @@ public class RaftConfig {
             }
 
             InetSocketAddress address = new InetSocketAddress(host, port);
-            if (address.equals(NON_ROUTABLE_ADDRESS)) {
+            if (nonRoutableAddress(address)) {
                 voterMap.put(voterId, UNKNOWN_ADDRESS_SPEC_INSTANCE);
             } else {
                 voterMap.put(voterId, new InetAddressSpec(address));

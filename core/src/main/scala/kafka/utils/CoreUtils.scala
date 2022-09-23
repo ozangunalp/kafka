@@ -21,11 +21,9 @@ import java.io._
 import java.nio._
 import java.nio.channels._
 import java.util.concurrent.locks.{Lock, ReadWriteLock}
-import java.lang.management._
 import java.util.{Base64, Properties, UUID}
 import com.typesafe.scalalogging.Logger
 
-import javax.management._
 import scala.collection._
 import scala.collection.{Seq, mutable}
 import kafka.cluster.EndPoint
@@ -118,20 +116,21 @@ object CoreUtils {
    * @return true if the registration succeeded
    */
   def registerMBean(mbean: Object, name: String): Boolean = {
-    try {
-      val mbs = ManagementFactory.getPlatformMBeanServer()
-      mbs synchronized {
-        val objName = new ObjectName(name)
-        if (mbs.isRegistered(objName))
-          mbs.unregisterMBean(objName)
-        mbs.registerMBean(mbean, objName)
-        true
-      }
-    } catch {
-      case e: Exception =>
-        logger.error(s"Failed to register Mbean $name", e)
-        false
-    }
+    // try {
+    //   val mbs = ManagementFactory.getPlatformMBeanServer()
+    //   mbs synchronized {
+    //     val objName = new ObjectName(name)
+    //     if (mbs.isRegistered(objName))
+    //       mbs.unregisterMBean(objName)
+    //     mbs.registerMBean(mbean, objName)
+    //     true
+    //   }
+    // } catch {
+    //   case e: Exception =>
+    //     logger.error(s"Failed to register Mbean $name", e)
+    //     false
+    // }
+    true
   }
 
   /**
@@ -139,12 +138,12 @@ object CoreUtils {
    * @param name The mbean name to unregister
    */
   def unregisterMBean(name: String): Unit = {
-    val mbs = ManagementFactory.getPlatformMBeanServer()
-    mbs synchronized {
-      val objName = new ObjectName(name)
-      if (mbs.isRegistered(objName))
-        mbs.unregisterMBean(objName)
-    }
+    // val mbs = ManagementFactory.getPlatformMBeanServer()
+    // mbs synchronized {
+    //   val objName = new ObjectName(name)
+    //   if (mbs.isRegistered(objName))
+    //     mbs.unregisterMBean(objName)
+    // }
   }
 
   /**

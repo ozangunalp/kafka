@@ -35,7 +35,7 @@ import org.apache.kafka.common.security.JaasContext
 import org.apache.kafka.common.security.auth.SecurityProtocol
 import org.apache.kafka.common.utils.{LogContext, Time}
 import org.apache.kafka.common.{TopicPartition, Uuid}
-import org.apache.kafka.raft.RaftConfig.{AddressSpec, InetAddressSpec, NON_ROUTABLE_ADDRESS, UnknownAddressSpec}
+import org.apache.kafka.raft.RaftConfig.{AddressSpec, InetAddressSpec, UnknownAddressSpec}
 import org.apache.kafka.raft.{FileBasedStateStore, KafkaRaftClient, LeaderAndEpoch, RaftClient, RaftConfig, RaftRequest, ReplicatedLog}
 import org.apache.kafka.server.common.serialization.RecordSerde
 import scala.jdk.CollectionConverters._
@@ -136,7 +136,7 @@ class KafkaRaftManager[T](
           netChannel.updateEndpoint(voterAddressEntry.getKey, spec)
         case _: UnknownAddressSpec =>
           info(s"Skipping channel update for destination ID: ${voterAddressEntry.getKey} " +
-            s"because of non-routable endpoint: ${NON_ROUTABLE_ADDRESS.toString}")
+            s"because of non-routable endpoint: 0.0.0.0:0")
         case invalid: AddressSpec =>
           warn(s"Unexpected address spec (type: ${invalid.getClass}) for channel update for " +
             s"destination ID: ${voterAddressEntry.getKey}")

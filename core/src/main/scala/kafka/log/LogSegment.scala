@@ -19,9 +19,8 @@ package kafka.log
 import java.io.{File, IOException}
 import java.nio.file.{Files, NoSuchFileException}
 import java.nio.file.attribute.FileTime
-import java.util.concurrent.TimeUnit
 import kafka.common.LogSegmentOffsetOverflowException
-import kafka.metrics.{KafkaMetricsGroup, KafkaTimer}
+import kafka.metrics.KafkaMetricsGroup
 import kafka.server.epoch.LeaderEpochFileCache
 import kafka.server.{FetchDataInfo, LogOffsetMetadata}
 import kafka.utils._
@@ -464,12 +463,10 @@ class LogSegment private[log] (val log: FileRecords,
    */
   @threadsafe
   def flush(): Unit = {
-    LogFlushStats.logFlushTimer.time {
-      log.flush()
-      offsetIndex.flush()
-      timeIndex.flush()
-      txnIndex.flush()
-    }
+    log.flush()
+    offsetIndex.flush()
+    timeIndex.flush()
+    txnIndex.flush()
   }
 
   /**
@@ -674,7 +671,7 @@ object LogSegment {
       new TransactionIndex(baseOffset, UnifiedLog.transactionIndexFile(dir, baseOffset, fileSuffix)),
       baseOffset,
       indexIntervalBytes = config.indexInterval,
-      rollJitterMs = config.randomSegmentJitter,
+      rollJitterMs = 0L,
       time)
   }
 
@@ -687,5 +684,5 @@ object LogSegment {
 }
 
 object LogFlushStats extends KafkaMetricsGroup {
-  val logFlushTimer = new KafkaTimer(newTimer("LogFlushRateAndTimeMs", TimeUnit.MILLISECONDS, TimeUnit.SECONDS))
+  // val logFlushTimer = new KafkaTimer(newTimer("LogFlushRateAndTimeMs", TimeUnit.MILLISECONDS, TimeUnit.SECONDS))
 }

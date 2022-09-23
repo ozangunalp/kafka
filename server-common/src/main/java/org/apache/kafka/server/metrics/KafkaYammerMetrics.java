@@ -22,7 +22,6 @@ import com.yammer.metrics.core.MetricsRegistry;
 import org.apache.kafka.common.Reconfigurable;
 import org.apache.kafka.common.config.ConfigException;
 import org.apache.kafka.common.metrics.JmxReporter;
-import org.apache.kafka.common.utils.Exit;
 import org.apache.kafka.common.utils.Sanitizer;
 
 import java.util.Iterator;
@@ -53,12 +52,8 @@ public class KafkaYammerMetrics implements Reconfigurable {
     }
 
     private final MetricsRegistry metricsRegistry = new MetricsRegistry();
-    private final FilteringJmxReporter jmxReporter = new FilteringJmxReporter(metricsRegistry,
-        metricName -> true);
 
     private KafkaYammerMetrics() {
-        jmxReporter.start();
-        Exit.addShutdownHook("kafka-jmx-shutdown-hook", jmxReporter::shutdown);
     }
 
     @Override
@@ -79,7 +74,6 @@ public class KafkaYammerMetrics implements Reconfigurable {
     @Override
     public void reconfigure(Map<String, ?> configs) {
         Predicate<String> mBeanPredicate = JmxReporter.compilePredicate(configs);
-        jmxReporter.updatePredicate(metricName -> mBeanPredicate.test(metricName.getMBeanName()));
     }
 
     public static MetricName getMetricName(

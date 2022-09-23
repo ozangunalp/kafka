@@ -753,15 +753,10 @@ class DynamicThreadPool(server: KafkaBroker) extends BrokerReconfigurable {
 class DynamicMetricsReporters(brokerId: Int, config: KafkaConfig, metrics: Metrics, clusterId: String) extends Reconfigurable {
   private val reporterState = new DynamicMetricReporterState(brokerId, config, metrics, clusterId)
   private[server] val currentReporters = reporterState.currentReporters
-  private val dynamicConfig = reporterState.dynamicConfig
 
   private def metricsReporterClasses(configs: util.Map[String, _]): mutable.Buffer[String] =
     reporterState.metricsReporterClasses(configs)
 
-  private def createReporters(reporterClasses: util.List[String], updatedConfigs: util.Map[String, _]): Unit =
-    reporterState.createReporters(reporterClasses, updatedConfigs)
-
-  private def removeReporter(className: String): Unit = reporterState.removeReporter(className)
 
   override def configure(configs: util.Map[String, _]): Unit = {}
 
@@ -794,53 +789,13 @@ class DynamicMetricsReporters(brokerId: Int, config: KafkaConfig, metrics: Metri
   }
 
   override def reconfigure(configs: util.Map[String, _]): Unit = {
-    val updatedMetricsReporters = metricsReporterClasses(configs)
-    val deleted = currentReporters.keySet.toSet -- updatedMetricsReporters
-    deleted.foreach(removeReporter)
-    currentReporters.values.foreach {
-      case reporter: Reconfigurable => dynamicConfig.maybeReconfigure(reporter, dynamicConfig.currentKafkaConfig, configs)
-      case _ =>
-    }
-    val added = updatedMetricsReporters.filterNot(currentReporters.keySet)
-    createReporters(added.asJava, configs)
+
   }
 }
 
 class DynamicMetricReporterState(brokerId: Int, config: KafkaConfig, metrics: Metrics, clusterId: String) {
   private[server] val dynamicConfig = config.dynamicConfig
-  private val propsOverride = Map[String, AnyRef](KafkaConfig.BrokerIdProp -> brokerId.toString)
   private[server] val currentReporters = mutable.Map[String, MetricsReporter]()
-  createReporters(config, clusterId, metricsReporterClasses(dynamicConfig.currentKafkaConfig.values()).asJava,
-    Collections.emptyMap[String, Object])
-
-  private[server] def createReporters(reporterClasses: util.List[String],
-                                      updatedConfigs: util.Map[String, _]): Unit = {
-    createReporters(config, clusterId, reporterClasses, updatedConfigs)
-  }
-
-  private def createReporters(config: KafkaConfig,
-                              clusterId: String,
-                              reporterClasses: util.List[String],
-                              updatedConfigs: util.Map[String, _]): Unit = {
-    val props = new util.HashMap[String, AnyRef]
-    updatedConfigs.forEach((k, v) => props.put(k, v.asInstanceOf[AnyRef]))
-    propsOverride.forKeyValue((k, v) => props.put(k, v))
-    val reporters = dynamicConfig.currentKafkaConfig.getConfiguredInstances(reporterClasses, classOf[MetricsReporter], props)
-
-    // Call notifyMetricsReporters first to satisfy the contract for MetricsReporter.contextChange,
-    // which provides that MetricsReporter.contextChange must be called before the first call to MetricsReporter.init.
-    // The first call to MetricsReporter.init is done when we call metrics.addReporter below.
-    KafkaBroker.notifyMetricsReporters(clusterId, config, reporters.asScala)
-    reporters.forEach { reporter =>
-      metrics.addReporter(reporter)
-      currentReporters += reporter.getClass.getName -> reporter
-    }
-    KafkaBroker.notifyClusterListeners(clusterId, reporters.asScala)
-  }
-
-  private[server] def removeReporter(className: String): Unit = {
-    currentReporters.remove(className).foreach(metrics.removeReporter)
-  }
 
   @nowarn("cat=deprecation")
   private[server] def metricsReporterClasses(configs: util.Map[String, _]): mutable.Buffer[String] = {
